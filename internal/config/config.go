@@ -24,9 +24,9 @@ type Config struct {
 	Zoom   uint
 
 	// Rendering settings
-	ANSI     bool
-	Color    string
-	ShowFPS  bool
+	ANSI    bool
+	Color   string
+	ShowFPS bool
 
 	// Greenscreen settings
 	GenerateSamples bool
@@ -171,10 +171,10 @@ func (c *Config) GetCameraDimensions() (uint, uint) {
 // GetScaledDimensions returns the dimensions adjusted for zoom level.
 func (c *Config) GetScaledDimensions() (uint, uint) {
 	scaleFactor := float64(c.Zoom) / 4.0 // Convert zoom 1-4 to 0.25-1.0 range
-	
+
 	scaledWidth := uint(float64(c.Width) * scaleFactor)
 	scaledHeight := uint(float64(c.Height) * scaleFactor)
-	
+
 	// Make sure we don't exceed the terminal dimensions
 	if scaledWidth > c.Width {
 		scaledWidth = c.Width
@@ -182,6 +182,6 @@ func (c *Config) GetScaledDimensions() (uint, uint) {
 	if scaledHeight > c.Height {
 		scaledHeight = c.Height
 	}
-	
+
 	return scaledWidth, scaledHeight
 }

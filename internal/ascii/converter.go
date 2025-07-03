@@ -21,7 +21,7 @@ type Converter struct {
 // NewConverter creates a new ASCII converter with default settings.
 func NewConverter() *Converter {
 	return &Converter{
-		pixels: []rune{' ', '.', ',', ':', ';', 'i', '1', 't', 'f', 'L', 'C', 'G', '0', '8', '@'},
+		pixels:      []rune{' ', '.', ',', ':', ';', 'i', '1', 't', 'f', 'L', 'C', 'G', '0', '8', '@'},
 		globalColor: color.Color(color.RGBA{0, 0, 0, 0}), // alpha 0 means use truecolor
 	}
 }

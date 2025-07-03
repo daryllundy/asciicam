@@ -4,6 +4,7 @@
 *.dll
 *.so
 *.dylib
+asciicam
 
 # Test binary, built with `go test -c`
 *.test
@@ -14,10 +15,49 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
-asciicam
-CLAUDE.md
+# Go workspace file
+go.work
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Build output
+build/
+dist/
+
+# Background samples for greenscreen
+bgsample/
+bgdata/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Log files
+*.log
+
+# Coverage files
+coverage.out
+coverage.html
+
+# Binaries
+bin/
+
+# Development files
 .aider*
 .history
 error.png
 *.cast
-.DS_Store

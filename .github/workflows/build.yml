@@ -26,15 +26,23 @@ jobs:
       - name: Install OpenCV
         run: |
           sudo apt-get update
-          # Install only core OpenCV modules (no contrib to avoid ArUco issues)
-          sudo apt-get install -y libopencv-dev pkg-config
+          # Install minimal OpenCV without any contrib modules
+          sudo apt-get install -y libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev pkg-config
+          # DO NOT install: libopencv-contrib-dev (contains ArUco)
+          
           # Verify OpenCV installation and get version
           opencv_version=$(pkg-config --modversion opencv4 2>/dev/null || pkg-config --modversion opencv 2>/dev/null || echo "unknown")
           echo "OpenCV version: $opencv_version"
+          
+          # List available OpenCV modules
+          echo "Available OpenCV modules:"
+          pkg-config --list-all | grep opencv || echo "No opencv packages found"
+          
           # Set environment for gocv build
           echo "PKG_CONFIG_PATH=$(pkg-config --variable=pc_path pkg-config)" >> $GITHUB_ENV
-          # Disable problematic modules in gocv
-          echo "GOCV_DISABLE_ARUCO=1" >> $GITHUB_ENV
+          
+          # Set build tags to exclude problematic modules
+          echo "GOCV_BUILD_TAGS=-tags minimal" >> $GITHUB_ENV
 
       - name: Download Go modules
         run: go mod download
@@ -60,6 +68,19 @@ jobs:
           EOF
           go run test_gocv.go || echo "gocv test failed - continuing anyway"
 
+      - name: Verify project structure
+        run: |
+          # Debug: Show current directory structure
+          echo "Current directory structure:"
+          find . -type f -name "*.go" | head -20
+          echo "Directory tree:"
+          tree -L 3 || ls -la
+          echo "Checking for cmd/asciicam:"
+          ls -la cmd/ || echo "cmd directory not found"
+          ls -la cmd/asciicam/ || echo "cmd/asciicam directory not found"
+          echo "Go mod info:"
+          go mod graph | head -5 || echo "go mod graph failed"
+
       - name: Build
         env:
           PKG_CONFIG_PATH: ${{ env.PKG_CONFIG_PATH }}
@@ -67,8 +88,14 @@ jobs:
           CGO_CFLAGS: ${{ env.CGO_CFLAGS }}
           CGO_LDFLAGS: ${{ env.CGO_LDFLAGS }}
         run: |
-          # Build the main application
-          go build -v -o asciicam ./cmd/asciicam
+          # Build the main application with minimal build tags
+          if [ -d "cmd/asciicam" ]; then
+            echo "Building from cmd/asciicam..."
+            go build -tags minimal -v -o asciicam ./cmd/asciicam
+          else
+            echo "cmd/asciicam not found, attempting to build from current directory..."
+            go build -tags minimal -v -o asciicam .
+          fi
           # Verify binary was created
           ls -la asciicam
 

@@ -34,8 +34,10 @@ jobs:
       - name: Install OpenCV dependencies
         run: |
           sudo apt-get update
-          # Install only core OpenCV modules (no contrib to avoid ArUco issues)
-          sudo apt-get install -y libopencv-dev pkg-config
+          # Install minimal OpenCV without any contrib modules
+          sudo apt-get install -y libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev pkg-config
+          # DO NOT install: libopencv-contrib-dev (contains ArUco)
+          
           # Verify OpenCV installation
           opencv_version=$(pkg-config --modversion opencv4 2>/dev/null || pkg-config --modversion opencv 2>/dev/null || echo "unknown")
           echo "OpenCV version: $opencv_version"
@@ -59,4 +61,4 @@ jobs:
           CGO_CFLAGS: "-I/usr/include/opencv4"
           CGO_LDFLAGS: "-lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_videoio"
         with:
-          args: --out-format=github-actions
+          args: --build-tags minimal --out-format=github-actions

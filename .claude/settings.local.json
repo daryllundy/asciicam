@@ -11,7 +11,10 @@
       "Bash(go build:*)",
       "Bash(rm:*)",
       "Bash(make:*)",
-      "Bash(go install:*)"
+      "Bash(go install:*)",
+      "Bash(git add:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git check-ignore:*)"
     ],
     "deny": []
   }

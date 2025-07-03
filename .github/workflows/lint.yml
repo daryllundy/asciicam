@@ -18,9 +18,6 @@ jobs:
     # ← enable CGO and tell it where to find OpenCV
     env:
       CGO_ENABLED: "1"
-      # Basic OpenCV modules only (no contrib/aruco)
-      CGO_CFLAGS: "-I/usr/include/opencv4"
-      CGO_LDFLAGS: "-lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_videoio"
 
     steps:
       - name: Check out code
@@ -34,13 +31,28 @@ jobs:
       - name: Install OpenCV dependencies
         run: |
           sudo apt-get update
-          # Install minimal OpenCV without any contrib modules
-          sudo apt-get install -y libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev pkg-config
-          # DO NOT install: libopencv-contrib-dev (contains ArUco)
+          # Install complete OpenCV development package (includes pkg-config files)
+          sudo apt-get install -y libopencv-dev pkg-config
           
-          # Verify OpenCV installation
-          opencv_version=$(pkg-config --modversion opencv4 2>/dev/null || pkg-config --modversion opencv 2>/dev/null || echo "unknown")
-          echo "OpenCV version: $opencv_version"
+          # Verify OpenCV installation and get version
+          echo "Checking for OpenCV pkg-config files..."
+          pkg-config --list-all | grep opencv || echo "No opencv packages found via pkg-config"
+          
+          # Try both opencv4 and opencv and set environment
+          if pkg-config --exists opencv4; then
+            opencv_version=$(pkg-config --modversion opencv4)
+            echo "Found OpenCV4 version: $opencv_version"
+            echo "CGO_CFLAGS=$(pkg-config --cflags opencv4)" >> $GITHUB_ENV
+            echo "CGO_LDFLAGS=$(pkg-config --libs opencv4)" >> $GITHUB_ENV
+          elif pkg-config --exists opencv; then
+            opencv_version=$(pkg-config --modversion opencv)
+            echo "Found OpenCV version: $opencv_version"
+            echo "CGO_CFLAGS=$(pkg-config --cflags opencv)" >> $GITHUB_ENV
+            echo "CGO_LDFLAGS=$(pkg-config --libs opencv)" >> $GITHUB_ENV
+          else
+            echo "ERROR: No OpenCV pkg-config found"
+            exit 1
+          fi
 
       - name: Download Go modules
         run: go mod download
@@ -58,7 +70,7 @@ jobs:
         uses: golangci/golangci-lint-action@v4
         env:
           CGO_ENABLED: "1"
-          CGO_CFLAGS: "-I/usr/include/opencv4"
-          CGO_LDFLAGS: "-lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_videoio"
+          CGO_CFLAGS: ${{ env.CGO_CFLAGS }}
+          CGO_LDFLAGS: ${{ env.CGO_LDFLAGS }}
         with:
-          args: --build-tags minimal --out-format=github-actions
+          args: --out-format=github-actions

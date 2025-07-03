@@ -11,9 +11,6 @@ jobs:
     env:
       GO111MODULE: "on"
       CGO_ENABLED: "1"
-      # Basic OpenCV modules only (no contrib/aruco)
-      CGO_CFLAGS: "-I/usr/include/opencv4"
-      CGO_LDFLAGS: "-lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_videoio"
     steps:
       - name: Install Go
         uses: actions/setup-go@v4
@@ -26,23 +23,31 @@ jobs:
       - name: Install OpenCV
         run: |
           sudo apt-get update
-          # Install minimal OpenCV without any contrib modules
-          sudo apt-get install -y libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev pkg-config
-          # DO NOT install: libopencv-contrib-dev (contains ArUco)
+          # Install complete OpenCV development package (includes pkg-config files)
+          sudo apt-get install -y libopencv-dev pkg-config
           
           # Verify OpenCV installation and get version
-          opencv_version=$(pkg-config --modversion opencv4 2>/dev/null || pkg-config --modversion opencv 2>/dev/null || echo "unknown")
-          echo "OpenCV version: $opencv_version"
+          echo "Checking for OpenCV pkg-config files..."
+          pkg-config --list-all | grep opencv || echo "No opencv packages found via pkg-config"
           
-          # List available OpenCV modules
-          echo "Available OpenCV modules:"
-          pkg-config --list-all | grep opencv || echo "No opencv packages found"
+          # Try both opencv4 and opencv
+          if pkg-config --exists opencv4; then
+            opencv_version=$(pkg-config --modversion opencv4)
+            echo "Found OpenCV4 version: $opencv_version"
+            echo "OpenCV4 cflags: $(pkg-config --cflags opencv4)"
+            echo "OpenCV4 libs: $(pkg-config --libs opencv4)"
+          elif pkg-config --exists opencv; then
+            opencv_version=$(pkg-config --modversion opencv)
+            echo "Found OpenCV version: $opencv_version"
+            echo "OpenCV cflags: $(pkg-config --cflags opencv)"
+            echo "OpenCV libs: $(pkg-config --libs opencv)"
+          else
+            echo "ERROR: No OpenCV pkg-config found"
+            exit 1
+          fi
           
           # Set environment for gocv build
           echo "PKG_CONFIG_PATH=$(pkg-config --variable=pc_path pkg-config)" >> $GITHUB_ENV
-          
-          # Set build tags to exclude problematic modules
-          echo "GOCV_BUILD_TAGS=-tags minimal" >> $GITHUB_ENV
 
       - name: Download Go modules
         run: go mod download
@@ -50,9 +55,25 @@ jobs:
       - name: Test gocv import
         env:
           CGO_ENABLED: ${{ env.CGO_ENABLED }}
-          CGO_CFLAGS: ${{ env.CGO_CFLAGS }}
-          CGO_LDFLAGS: ${{ env.CGO_LDFLAGS }}
         run: |
+          # Set CGO flags based on available OpenCV version
+          if pkg-config --exists opencv4; then
+            export CGO_CFLAGS="$(pkg-config --cflags opencv4)"
+            export CGO_LDFLAGS="$(pkg-config --libs opencv4)"
+            echo "Using OpenCV4 pkg-config"
+          elif pkg-config --exists opencv; then
+            export CGO_CFLAGS="$(pkg-config --cflags opencv)"
+            export CGO_LDFLAGS="$(pkg-config --libs opencv)"
+            echo "Using OpenCV pkg-config"
+          else
+            echo "No OpenCV pkg-config found, using defaults"
+            export CGO_CFLAGS="-I/usr/include/opencv4 -I/usr/include/opencv2"
+            export CGO_LDFLAGS="-lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_videoio"
+          fi
+          
+          echo "CGO_CFLAGS: $CGO_CFLAGS"
+          echo "CGO_LDFLAGS: $CGO_LDFLAGS"
+          
           # Test if gocv can be imported without ArUco issues
           go list -m gocv.io/x/gocv
           echo "Testing basic gocv import..."
@@ -83,18 +104,33 @@ jobs:
 
       - name: Build
         env:
-          PKG_CONFIG_PATH: ${{ env.PKG_CONFIG_PATH }}
           CGO_ENABLED: ${{ env.CGO_ENABLED }}
-          CGO_CFLAGS: ${{ env.CGO_CFLAGS }}
-          CGO_LDFLAGS: ${{ env.CGO_LDFLAGS }}
         run: |
-          # Build the main application with minimal build tags
+          # Set CGO flags based on available OpenCV version
+          if pkg-config --exists opencv4; then
+            export CGO_CFLAGS="$(pkg-config --cflags opencv4)"
+            export CGO_LDFLAGS="$(pkg-config --libs opencv4)"
+            echo "Using OpenCV4 for build"
+          elif pkg-config --exists opencv; then
+            export CGO_CFLAGS="$(pkg-config --cflags opencv)"
+            export CGO_LDFLAGS="$(pkg-config --libs opencv)"
+            echo "Using OpenCV for build"
+          else
+            echo "No OpenCV pkg-config found, using defaults"
+            export CGO_CFLAGS="-I/usr/include/opencv4 -I/usr/include/opencv2"
+            export CGO_LDFLAGS="-lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_videoio"
+          fi
+          
+          echo "Build CGO_CFLAGS: $CGO_CFLAGS"
+          echo "Build CGO_LDFLAGS: $CGO_LDFLAGS"
+          
+          # Build the main application
           if [ -d "cmd/asciicam" ]; then
             echo "Building from cmd/asciicam..."
-            go build -tags minimal -v -o asciicam ./cmd/asciicam
+            go build -v -o asciicam ./cmd/asciicam
           else
             echo "cmd/asciicam not found, attempting to build from current directory..."
-            go build -tags minimal -v -o asciicam .
+            go build -v -o asciicam .
           fi
           # Verify binary was created
           ls -la asciicam
@@ -102,9 +138,34 @@ jobs:
       - name: Test
         env:
           CGO_ENABLED: ${{ env.CGO_ENABLED }}
-          CGO_CFLAGS: ${{ env.CGO_CFLAGS }}
-          CGO_LDFLAGS: ${{ env.CGO_LDFLAGS }}
-        run: go test ./...
+        run: |
+          # Set CGO flags for tests
+          if pkg-config --exists opencv4; then
+            export CGO_CFLAGS="$(pkg-config --cflags opencv4)"
+            export CGO_LDFLAGS="$(pkg-config --libs opencv4)"
+          elif pkg-config --exists opencv; then
+            export CGO_CFLAGS="$(pkg-config --cflags opencv)"
+            export CGO_LDFLAGS="$(pkg-config --libs opencv)"
+          else
+            export CGO_CFLAGS="-I/usr/include/opencv4 -I/usr/include/opencv2"
+            export CGO_LDFLAGS="-lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_videoio"
+          fi
+          
+          go test ./...
+
+      - name: Set CGO flags for linting
+        run: |
+          # Set and export CGO flags for subsequent steps
+          if pkg-config --exists opencv4; then
+            echo "CGO_CFLAGS=$(pkg-config --cflags opencv4)" >> $GITHUB_ENV
+            echo "CGO_LDFLAGS=$(pkg-config --libs opencv4)" >> $GITHUB_ENV
+          elif pkg-config --exists opencv; then
+            echo "CGO_CFLAGS=$(pkg-config --cflags opencv)" >> $GITHUB_ENV
+            echo "CGO_LDFLAGS=$(pkg-config --libs opencv)" >> $GITHUB_ENV
+          else
+            echo "CGO_CFLAGS=-I/usr/include/opencv4 -I/usr/include/opencv2" >> $GITHUB_ENV
+            echo "CGO_LDFLAGS=-lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_videoio" >> $GITHUB_ENV
+          fi
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v4

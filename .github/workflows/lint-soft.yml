@@ -1,0 +1,39 @@
+name: lint-soft
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+  # Optional: allow read access to pull request. Use with `only-new-issues` option.
+  pull-requests: read
+
+jobs:
+  golangci:
+    name: lint-soft
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "1"
+      CGO_CFLAGS: "-I/usr/include/opencv4"
+      CGO_LDFLAGS: "-lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs -lopencv_videoio"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+      - name: Install OpenCV dependencies
+        run: sudo apt-get update && sudo apt-get install -y libopencv-dev pkg-config
+      - name: Download Go modules
+        run: go mod download
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        env:
+          CGO_ENABLED: "1"
+          CGO_CFLAGS: "-I/usr/include/opencv4"
+          CGO_LDFLAGS: "-lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs -lopencv_videoio"
+        with:
+          # Optional: golangci-lint command line arguments.
+          args: --config .golangci-soft.yml --issues-exit-code=0
+          # Optional: show only new issues if it's a pull request. The default value is `false`.
+          only-new-issues: true

@@ -1,0 +1,62 @@
+name: Lint Go code
+
+on:
+  push:
+    branches:
+      - main      # remove or adjust if you want every branch
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  golangci-lint:
+    name: Run golangci-lint
+    runs-on: ubuntu-latest
+
+    # ← enable CGO and tell it where to find OpenCV
+    env:
+      CGO_ENABLED: "1"
+      CGO_CFLAGS: "-I/usr/include/opencv4"
+      CGO_LDFLAGS: >-
+        -lopencv_core
+        -lopencv_imgproc
+        -lopencv_highgui
+        -lopencv_imgcodecs
+        -lopencv_videoio
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+
+      - name: Install OpenCV dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libopencv-dev pkg-config
+
+      - name: Download Go modules
+        run: go mod download
+
+      # ← optional cache to speed up future runs and quiet the 422 warning
+      - name: Cache golangci-lint binary
+        uses: actions/cache@v3
+        with:
+          path: |
+            /home/runner/golangci-lint-*
+          key: golangci-lint-${{ runner.os }}-${{ hashFiles('go.sum') }}
+          restore-keys: golangci-lint-${{ runner.os }}-
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        env:
+          CGO_ENABLED: "1"
+          CGO_CFLAGS: "-I/usr/include/opencv4"
+          CGO_LDFLAGS: "-lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs -lopencv_videoio"
+        with:
+          args: run --out-format=github-actions

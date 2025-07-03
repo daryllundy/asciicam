@@ -1,0 +1,69 @@
+name: build
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        go-version: [1.22]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      GO111MODULE: "on"
+      CGO_ENABLED: "1"
+      CGO_CFLAGS: "-I/usr/include/opencv4"
+      CGO_LDFLAGS: "-lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs -lopencv_videoio"
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install OpenCV
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libopencv-dev pkg-config
+          echo "PKG_CONFIG_PATH=$(pkg-config --variable=pc_path pkg-config)" >> $GITHUB_ENV
+
+      - name: Download Go modules
+        run: go mod download
+
+      - name: Build
+        env:
+          PKG_CONFIG_PATH: ${{ env.PKG_CONFIG_PATH }}
+          CGO_ENABLED: ${{ env.CGO_ENABLED }}
+          CGO_CFLAGS: ${{ env.CGO_CFLAGS }}
+          CGO_LDFLAGS: ${{ env.CGO_LDFLAGS }}
+        run: go build -v ./...
+
+      - name: Test
+        env:
+          CGO_ENABLED: ${{ env.CGO_ENABLED }}
+          CGO_CFLAGS: ${{ env.CGO_CFLAGS }}
+          CGO_LDFLAGS: ${{ env.CGO_LDFLAGS }}
+        run: go test ./...
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        env:
+          CGO_ENABLED: ${{ env.CGO_ENABLED }}
+          CGO_CFLAGS: ${{ env.CGO_CFLAGS }}
+          CGO_LDFLAGS: ${{ env.CGO_LDFLAGS }}
+        with:
+          version: latest
+          args: --config .golangci-soft.yml --issues-exit-code=0
+          only-new-issues: true
+
+      - name: Run golangci-lint (all linters)
+        uses: golangci/golangci-lint-action@v4
+        env:
+          CGO_ENABLED: ${{ env.CGO_ENABLED }}
+          CGO_CFLAGS: ${{ env.CGO_CFLAGS }}
+          CGO_LDFLAGS: ${{ env.CGO_LDFLAGS }}
+        with:
+          version: latest
+          args: --issues-exit-code=0
+          only-new-issues: true

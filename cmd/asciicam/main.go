@@ -60,7 +60,7 @@ func run(ctx context.Context) error {
 		gsProcessor = greenscreen.NewProcessor(cfg.SamplePath, cfg.Threshold)
 		if cfg.UseGreenscreen {
 			termWidth, termHeight := cfg.GetDisplayDimensions()
-			if err := gsProcessor.LoadBackground(termWidth, termHeight); err != nil {
+			if err := gsProcessor.LoadBackgroundWithContext(ctx, termWidth, termHeight); err != nil {
 				return fmt.Errorf("error loading background samples: %w", err)
 			}
 		}
@@ -95,7 +95,7 @@ func run(ctx context.Context) error {
 		}
 
 		// Read frame from camera
-		img, err := capture.ReadFrame()
+		img, err := capture.ReadFrameWithContext(ctx)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error reading frame: %v\n", err)
 			time.Sleep(100 * time.Millisecond)

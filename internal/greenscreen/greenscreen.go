@@ -3,12 +3,14 @@ package greenscreen
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"image"
 	"image/png"
 	"os"
 
 	"github.com/lucasb-eyer/go-colorful"
+	"github.com/muesli/asciicam/internal/errors"
 	"github.com/nfnt/resize"
 )
 
@@ -29,10 +31,20 @@ func NewProcessor(samplePath string, threshold float64) *Processor {
 
 // LoadBackground loads the background sample image for greenscreen processing.
 func (p *Processor) LoadBackground(width, height uint) error {
+	return p.LoadBackgroundWithContext(context.Background(), width, height)
+}
+
+// LoadBackgroundWithContext loads the background sample image with context support.
+func (p *Processor) LoadBackgroundWithContext(ctx context.Context, width, height uint) error {
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("context cancelled: %w", err)
+	}
+
 	bg, err := p.loadBgSamples(width, height)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: %v", errors.ErrGreenscreenLoadFailed, err)
 	}
+	
 	p.background = bg
 	return nil
 }
@@ -62,19 +74,34 @@ func (p *Processor) Apply(img *image.RGBA) {
 
 // GenerateSamples generates background sample images for greenscreen processing.
 func (p *Processor) GenerateSamples(img image.Image, frameNumber int) error {
-	// Make sure sample directory exists
-	if err := os.MkdirAll(p.samplePath, 0755); err != nil {
-		return fmt.Errorf("failed to create sample directory: %w", err)
+	return p.GenerateSamplesWithContext(context.Background(), img, frameNumber)
+}
+
+// GenerateSamplesWithContext generates background sample images with context support.
+func (p *Processor) GenerateSamplesWithContext(ctx context.Context, img image.Image, frameNumber int) error {
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("context cancelled: %w", err)
 	}
 
-	f, err := os.Create(fmt.Sprintf("%s/%d.png", p.samplePath, frameNumber))
+	// Make sure sample directory exists
+	if err := os.MkdirAll(p.samplePath, 0755); err != nil {
+		return errors.NewFileError(p.samplePath, "mkdir", fmt.Errorf("%w: %v", errors.ErrDirCreateFailed, err))
+	}
+
+	filename := fmt.Sprintf("%s/%d.png", p.samplePath, frameNumber)
+	f, err := os.Create(filename)
 	if err != nil {
-		return fmt.Errorf("failed to create sample file: %w", err)
+		return errors.NewFileError(filename, "create", fmt.Errorf("%w: %v", errors.ErrFileWriteFailed, err))
 	}
 	defer f.Close()
 
+	// Check context before encoding
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("context cancelled during file creation: %w", err)
+	}
+
 	if err := png.Encode(f, img); err != nil {
-		return fmt.Errorf("failed to encode sample frame: %w", err)
+		return errors.NewFileError(filename, "encode", fmt.Errorf("%w: %v", errors.ErrImageEncodeFailed, err))
 	}
 
 	return nil
@@ -86,18 +113,25 @@ func (p *Processor) loadBgSamples(width, height uint) (image.Image, error) {
 	// TODO: take average of sample set
 	// Currently only using a single sample
 	i := 40
-	b, err := os.ReadFile(fmt.Sprintf("%s/%d.png", p.samplePath, i))
+	filename := fmt.Sprintf("%s/%d.png", p.samplePath, i)
+	
+	b, err := os.ReadFile(filename)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read background sample: %w", err)
+		return nil, errors.NewFileError(filename, "read", fmt.Errorf("%w: %v", errors.ErrFileReadFailed, err))
 	}
 
 	img, err := png.Decode(bytes.NewReader(b))
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode background sample: %w", err)
+		return nil, errors.NewFileError(filename, "decode", fmt.Errorf("%w: %v", errors.ErrImageDecodeFailed, err))
 	}
 
 	// Resize the background image to match the terminal dimensions
-	return resize.Resize(width, height, img, resize.Bilinear), nil
+	resized := resize.Resize(width, height, img, resize.Bilinear)
+	if resized == nil {
+		return nil, errors.NewImageError("resize", fmt.Sprintf("%dx%d", width, height), errors.ErrImageResizeFailed)
+	}
+	
+	return resized, nil
 }
 
 // GetThreshold returns the current threshold value.

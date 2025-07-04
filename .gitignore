@@ -52,6 +52,8 @@ bgdata/
 # Coverage files
 coverage.out
 coverage.html
+coverage/
+*.cover
 
 # Binaries
 bin/

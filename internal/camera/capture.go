@@ -2,10 +2,12 @@
 package camera
 
 import (
+	"context"
 	"fmt"
 	"image"
 	"image/color"
 
+	"github.com/muesli/asciicam/internal/errors"
 	"github.com/nfnt/resize"
 	"gocv.io/x/gocv"
 )
@@ -22,7 +24,7 @@ type Capture struct {
 func NewCapture(deviceID int, width, height uint) (*Capture, error) {
 	webcam, err := gocv.OpenVideoCapture(deviceID)
 	if err != nil {
-		return nil, fmt.Errorf("error opening video capture device: %v", err)
+		return nil, errors.NewCameraError(deviceID, "open", fmt.Errorf("%w: %v", errors.ErrCameraInitFailed, err))
 	}
 
 	// Set camera properties
@@ -32,7 +34,7 @@ func NewCapture(deviceID int, width, height uint) (*Capture, error) {
 	// Check if camera opened correctly
 	if !webcam.IsOpened() {
 		webcam.Close()
-		return nil, fmt.Errorf("camera device %d failed to open", deviceID)
+		return nil, errors.NewCameraError(deviceID, "open", errors.ErrCameraNotFound)
 	}
 
 	return &Capture{
@@ -52,21 +54,40 @@ func (c *Capture) Close() {
 
 // ReadFrame reads a frame from the webcam and returns it as an image.
 func (c *Capture) ReadFrame() (image.Image, error) {
+	return c.ReadFrameWithContext(context.Background())
+}
+
+// ReadFrameWithContext reads a frame from the webcam with context support.
+func (c *Capture) ReadFrameWithContext(ctx context.Context) (image.Image, error) {
+	// Check context first
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("context cancelled: %w", err)
+	}
+
 	frame := gocv.NewMat()
 	defer frame.Close()
 
 	// Read a new frame from the webcam
 	if ok := c.webcam.Read(&frame); !ok {
-		return nil, fmt.Errorf("error reading frame from camera")
+		return nil, errors.NewCameraError(c.deviceID, "read", errors.ErrCameraReadFailed)
 	}
 
 	// Skip empty frames
 	if frame.Empty() {
-		return nil, fmt.Errorf("empty frame received")
+		return nil, errors.NewCameraError(c.deviceID, "read", fmt.Errorf("%w: empty frame", errors.ErrCameraReadFailed))
+	}
+
+	// Check context again before processing
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("context cancelled during frame processing: %w", err)
 	}
 
 	// Convert gocv Mat to Go image
 	img := c.matToImage(frame)
+	if img == nil {
+		return nil, errors.NewImageError("convert", fmt.Sprintf("%dx%d", c.width, c.height), errors.ErrImageProcessFailed)
+	}
+
 	return img, nil
 }
 

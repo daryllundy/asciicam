@@ -1,0 +1,42 @@
+# Codecov configuration for asciicam
+
+coverage:
+  precision: 2
+  round: down
+  range: "60...90"
+  
+  status:
+    project:
+      default:
+        target: 70%
+        threshold: 5%
+        if_ci_failed: error
+    patch:
+      default:
+        target: 80%
+        threshold: 10%
+        if_ci_failed: error
+
+comment:
+  layout: "header,diff,flags,files,footer"
+  behavior: default
+  require_changes: false
+  require_base: no
+  require_head: yes
+
+ignore:
+  - "docs/**/*"
+  - "examples/**/*"
+  - "scripts/**/*"
+  - "vendor/**/*"
+  - "**/*_test.go"
+  - "cmd/asciicam/main.go"  # Exclude main.go from coverage requirements
+
+flag_management:
+  default_rules:
+    carryforward: true
+    statuses:
+      - type: project
+        target: 70%
+      - type: patch
+        target: 80%

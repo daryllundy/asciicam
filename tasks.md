@@ -47,12 +47,12 @@
 - [x] Add `.golangci.yml` configuration file
 - [x] Set up linting with golangci-lint
 - [x] Configure gofmt and goimports
-- [ ] Add pre-commit hooks for code quality
-- [ ] Create code coverage reporting
+- [x] Add pre-commit hooks for code quality
+- [x] Create code coverage reporting
 
 ### Error Handling & Logging
-- [ ] Implement proper error handling with context
-- [ ] Create custom error types for different failure modes
+- [x] Implement proper error handling with context
+- [x] Create custom error types for different failure modes
 - [ ] Add structured logging with levels (debug, info, error)
 - [ ] Replace panic calls with proper error returns
 - [ ] Add logging configuration options

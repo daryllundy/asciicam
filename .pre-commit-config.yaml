@@ -1,0 +1,96 @@
+repos:
+  # Go formatting and imports
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
+    hooks:
+      - id: go-fmt
+        name: Format Go code
+        description: Run gofmt on Go source files
+      - id: go-imports
+        name: Fix Go imports
+        description: Run goimports on Go source files
+      - id: go-vet-pkg
+        name: Go vet
+        description: Run go vet on Go packages
+      - id: go-mod-tidy
+        name: Tidy Go modules
+        description: Run go mod tidy
+  
+  # General file formatting
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
+        description: Remove trailing whitespace from files
+      - id: end-of-file-fixer
+        name: Fix end of files
+        description: Ensure files end with a newline
+      - id: check-yaml
+        name: Check YAML syntax
+        description: Validate YAML files
+      - id: check-json
+        name: Check JSON syntax
+        description: Validate JSON files
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+        description: Check for files that contain merge conflict strings
+      - id: check-case-conflict
+        name: Check for case conflicts
+        description: Check for files with names that would conflict on case-insensitive filesystems
+      - id: mixed-line-ending
+        name: Check line endings
+        description: Replace or check mixed line endings
+        args: [--fix=lf]
+  
+  # Go-specific linting
+  - repo: local
+    hooks:
+      - id: golangci-lint
+        name: golangci-lint
+        description: Fast linters runner for Go
+        entry: golangci-lint
+        args: [run, --config, .golangci.yml]
+        language: system
+        files: \.go$
+        pass_filenames: false
+      
+      - id: go-test
+        name: Go test
+        description: Run Go tests
+        entry: go
+        args: [test, ./...]
+        language: system
+        files: \.go$
+        pass_filenames: false
+      
+      - id: go-build
+        name: Go build
+        description: Build Go application
+        entry: go
+        args: [build, ./cmd/asciicam]
+        language: system
+        files: \.go$
+        pass_filenames: false
+      
+      - id: coverage-check
+        name: Coverage check
+        description: Check code coverage meets minimum requirements
+        entry: ./scripts/coverage.sh
+        language: system
+        files: \.go$
+        pass_filenames: false
+
+# Configure pre-commit to fail fast
+fail_fast: false
+
+# Skip certain hooks for specific file types
+exclude: |
+  (?x)^
+  (
+    vendor/.*|
+    \.git/.*|
+    \.github/.*|
+    docs/.*\.png|
+    examples/.*
+  )$

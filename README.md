@@ -4,6 +4,9 @@
 [![GitLab](https://img.shields.io/badge/GitLab-Mirror-FCA121?logo=gitlab)](https://gitlab.com/daryllundy/asciicam)
 [![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go)](https://golang.org/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Build Status](https://github.com/daryllundy/asciicam/workflows/build/badge.svg)](https://github.com/daryllundy/asciicam/actions)
+[![Coverage](https://codecov.io/gh/daryllundy/asciicam/branch/main/graph/badge.svg)](https://codecov.io/gh/daryllundy/asciicam)
+[![Go Report Card](https://goreportcard.com/badge/github.com/daryllundy/asciicam)](https://goreportcard.com/report/github.com/daryllundy/asciicam)
 
 Transform your webcam feed into ASCII art directly in your terminal! asciicam provides real-time conversion of video input to ASCII characters or ANSI color blocks, complete with virtual greenscreen functionality.
 

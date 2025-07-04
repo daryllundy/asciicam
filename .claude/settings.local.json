@@ -18,7 +18,8 @@
       "Bash(golangci-lint run:*)",
       "Bash(go test:*)",
       "Bash(gofmt:*)",
-      "Bash(goimports:*)"
+      "Bash(goimports:*)",
+      "Bash(./scripts/coverage.sh:*)"
     ],
     "deny": []
   }

@@ -35,6 +35,11 @@ Thank you for your interest in contributing to asciicam! This document provides 
    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
    ```
 
+3. **Set up pre-commit hooks** (recommended):
+   ```bash
+   ./scripts/setup-pre-commit.sh
+   ```
+
 ### Making Changes
 
 1. **Create a feature branch**:
@@ -62,6 +67,34 @@ Thank you for your interest in contributing to asciicam! This document provides 
 - **Linting**: Code must pass `golangci-lint` checks
 - **Testing**: Add tests for new functionality
 - **Documentation**: Update documentation for new features
+
+### Pre-commit Hooks
+
+We use pre-commit hooks to ensure code quality and consistency. The hooks automatically run before each commit to:
+
+- Format Go code with `gofmt` and `goimports`
+- Run static analysis with `go vet`
+- Execute linting with `golangci-lint`
+- Run tests to catch regressions
+- Verify the project builds successfully
+- Check for common issues (trailing whitespace, etc.)
+
+**Setup**:
+```bash
+./scripts/setup-pre-commit.sh
+```
+
+**Manual execution**:
+```bash
+pre-commit run --all-files
+```
+
+**Skip hooks** (use sparingly):
+```bash
+git commit --no-verify
+```
+
+The pre-commit hooks help maintain code quality and reduce CI failures. They're designed to be fast and only run checks relevant to the files being committed.
 
 ### Code Structure
 

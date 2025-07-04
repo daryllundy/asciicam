@@ -1,6 +1,6 @@
 # Makefile for asciicam
 
-.PHONY: build clean test lint fmt deps install help run dev cross-build check coverage
+.PHONY: build clean test lint fmt deps install help run dev cross-build check coverage setup-hooks
 
 # Variables
 BINARY_NAME = asciicam
@@ -32,10 +32,8 @@ test:
 
 # Run tests with coverage
 coverage:
-	@echo "Running tests with coverage..."
-	go test -coverprofile=coverage.out ./...
-	go tool cover -html=coverage.out -o coverage.html
-	@echo "Coverage report generated: coverage.html"
+	@echo "Running comprehensive coverage analysis..."
+	./scripts/coverage.sh
 
 # Run linting
 lint:
@@ -59,6 +57,11 @@ install-tools:
 	@echo "Installing build tools..."
 	go install golang.org/x/tools/cmd/goimports@latest
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+# Set up pre-commit hooks
+setup-hooks:
+	@echo "Setting up pre-commit hooks..."
+	./scripts/setup-pre-commit.sh
 
 # Install the binary
 install: build
@@ -147,6 +150,7 @@ help:
 	@echo "  fmt            - Format code"
 	@echo "  deps           - Install dependencies"
 	@echo "  install-tools  - Install build tools"
+	@echo "  setup-hooks    - Set up pre-commit hooks"
 	@echo "  install        - Install binary to /usr/local/bin"
 	@echo "  run            - Build and run the application"
 	@echo "  dev            - Development mode with live reload"

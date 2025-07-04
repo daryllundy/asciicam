@@ -38,7 +38,6 @@ linters:
   enable:
     # Core Go tools
     - gofmt
-    - goimports
     - govet
     - ineffassign
     - staticcheck
@@ -76,9 +75,6 @@ linters-settings:
 
   gofmt:
     simplify: true
-
-  goimports:
-    local-prefixes: github.com/muesli/asciicam
 
   revive:
     rules:

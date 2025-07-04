@@ -31,12 +31,17 @@ jobs:
       - name: Install OpenCV dependencies
         run: |
           sudo apt-get update
-          # Install complete OpenCV development package (includes pkg-config files)
-          sudo apt-get install -y libopencv-dev pkg-config
+          # Install complete OpenCV development packages
+          sudo apt-get install -y \
+            libopencv-dev \
+            libopencv-contrib-dev \
+            pkg-config \
+            build-essential
           
           # Verify OpenCV installation and get version
           echo "Checking for OpenCV pkg-config files..."
           pkg-config --list-all | grep opencv || echo "No opencv packages found via pkg-config"
+          ls /usr/lib/pkgconfig/ | grep opencv || echo "No opencv pkg-config files found"
           
           # Try both opencv4 and opencv and set environment
           if pkg-config --exists opencv4; then
@@ -44,18 +49,37 @@ jobs:
             echo "Found OpenCV4 version: $opencv_version"
             echo "CGO_CFLAGS=$(pkg-config --cflags opencv4)" >> $GITHUB_ENV
             echo "CGO_LDFLAGS=$(pkg-config --libs opencv4)" >> $GITHUB_ENV
+            echo "PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig" >> $GITHUB_ENV
           elif pkg-config --exists opencv; then
             opencv_version=$(pkg-config --modversion opencv)
             echo "Found OpenCV version: $opencv_version"
             echo "CGO_CFLAGS=$(pkg-config --cflags opencv)" >> $GITHUB_ENV
             echo "CGO_LDFLAGS=$(pkg-config --libs opencv)" >> $GITHUB_ENV
+            echo "PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig" >> $GITHUB_ENV
           else
             echo "ERROR: No OpenCV pkg-config found"
+            echo "Available pkg-config files:"
+            ls /usr/lib/pkgconfig/ | grep -i cv || echo "No OpenCV-related files found"
+            ls /usr/lib/x86_64-linux-gnu/pkgconfig/ | grep -i cv || echo "No OpenCV-related files found in arch-specific directory"
             exit 1
           fi
 
       - name: Download Go modules
         run: go mod download
+
+      - name: Install goimports
+        run: go install golang.org/x/tools/cmd/goimports@latest
+
+      - name: Format code with goimports
+        run: |
+          goimports -w .
+          # Check if there are any changes after formatting
+          if [ -n "$(git diff --name-only)" ]; then
+            echo "The following files were reformatted:"
+            git diff --name-only
+            echo "Please run 'goimports -w .' locally and commit the changes"
+            exit 1
+          fi
 
       # ← optional cache to speed up future runs and quiet the 422 warning
       - name: Cache golangci-lint binary
@@ -72,5 +96,6 @@ jobs:
           CGO_ENABLED: "1"
           CGO_CFLAGS: ${{ env.CGO_CFLAGS }}
           CGO_LDFLAGS: ${{ env.CGO_LDFLAGS }}
+          PKG_CONFIG_PATH: ${{ env.PKG_CONFIG_PATH }}
         with:
           args: --out-format=github-actions

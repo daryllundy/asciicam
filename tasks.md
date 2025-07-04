@@ -46,7 +46,7 @@
 ### Code Quality Tools
 - [x] Add `.golangci.yml` configuration file
 - [x] Set up linting with golangci-lint
-- [ ] Configure gofmt and goimports
+- [x] Configure gofmt and goimports
 - [ ] Add pre-commit hooks for code quality
 - [ ] Create code coverage reporting
 

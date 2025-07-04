@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"image"
 	"image/png"
-	"io/ioutil"
 	"os"
 
 	"github.com/lucasb-eyer/go-colorful"
@@ -87,7 +86,7 @@ func (p *Processor) loadBgSamples(width, height uint) (image.Image, error) {
 	// TODO: take average of sample set
 	// Currently only using a single sample
 	i := 40
-	b, err := ioutil.ReadFile(fmt.Sprintf("%s/%d.png", p.samplePath, i))
+	b, err := os.ReadFile(fmt.Sprintf("%s/%d.png", p.samplePath, i))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read background sample: %w", err)
 	}
@@ -98,7 +97,7 @@ func (p *Processor) loadBgSamples(width, height uint) (image.Image, error) {
 	}
 
 	// Resize the background image to match the terminal dimensions
-	return resize.Resize(width, height, img, resize.Bilinear).(*image.RGBA), nil
+	return resize.Resize(width, height, img, resize.Bilinear), nil
 }
 
 // GetThreshold returns the current threshold value.

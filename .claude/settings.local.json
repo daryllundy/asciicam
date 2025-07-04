@@ -15,7 +15,10 @@
       "Bash(git add:*)",
       "Bash(git ls-tree:*)",
       "Bash(git check-ignore:*)",
-      "Bash(golangci-lint run:*)"
+      "Bash(golangci-lint run:*)",
+      "Bash(go test:*)",
+      "Bash(gofmt:*)",
+      "Bash(goimports:*)"
     ],
     "deny": []
   }

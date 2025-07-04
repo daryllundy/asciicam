@@ -33,19 +33,19 @@
 ## 🔧 Phase 2: Code Quality & Testing (High Priority)
 
 ### Testing Infrastructure
-- [ ] Create test files for each internal package:
-  - [ ] `internal/ascii/converter_test.go`
-  - [ ] `internal/camera/capture_test.go`
-  - [ ] `internal/config/config_test.go`
-  - [ ] `internal/greenscreen/greenscreen_test.go`
-- [ ] Add unit tests for core ASCII conversion functions
-- [ ] Add integration tests for camera functionality
-- [ ] Create test fixtures and sample data
-- [ ] Add benchmark tests for performance measurement
+- [x] Create test files for each internal package:
+  - [x] `internal/ascii/converter_test.go`
+  - [x] `internal/camera/capture_test.go`
+  - [x] `internal/config/config_test.go`
+  - [x] `internal/greenscreen/greenscreen_test.go`
+- [x] Add unit tests for core ASCII conversion functions
+- [x] Add integration tests for camera functionality
+- [x] Create test fixtures and sample data
+- [x] Add benchmark tests for performance measurement
 
 ### Code Quality Tools
-- [ ] Add `.golangci.yml` configuration file
-- [ ] Set up linting with golangci-lint
+- [x] Add `.golangci.yml` configuration file
+- [x] Set up linting with golangci-lint
 - [ ] Configure gofmt and goimports
 - [ ] Add pre-commit hooks for code quality
 - [ ] Create code coverage reporting

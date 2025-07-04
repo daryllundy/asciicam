@@ -71,11 +71,12 @@ func run(ctx context.Context) error {
 	scaledWidth, scaledHeight := cfg.GetScaledDimensions()
 
 	// Set up terminal
-	p := termenv.EnvColorProfile()
-	termenv.HideCursor()
-	defer termenv.ShowCursor()
-	termenv.AltScreen()
-	defer termenv.ExitAltScreen()
+	output := termenv.NewOutput(os.Stdout)
+	p := output.ColorProfile()
+	output.HideCursor()
+	defer output.ShowCursor()
+	output.AltScreen()
+	defer output.ExitAltScreen()
 
 	// Clear screen at the beginning
 	fmt.Print("\033[2J") // Clear entire screen

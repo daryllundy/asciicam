@@ -44,7 +44,7 @@ func (p *Processor) LoadBackgroundWithContext(ctx context.Context, width, height
 	if err != nil {
 		return fmt.Errorf("%w: %v", errors.ErrGreenscreenLoadFailed, err)
 	}
-	
+
 	p.background = bg
 	return nil
 }
@@ -114,7 +114,7 @@ func (p *Processor) loadBgSamples(width, height uint) (image.Image, error) {
 	// Currently only using a single sample
 	i := 40
 	filename := fmt.Sprintf("%s/%d.png", p.samplePath, i)
-	
+
 	b, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, errors.NewFileError(filename, "read", fmt.Errorf("%w: %v", errors.ErrFileReadFailed, err))
@@ -130,7 +130,7 @@ func (p *Processor) loadBgSamples(width, height uint) (image.Image, error) {
 	if resized == nil {
 		return nil, errors.NewImageError("resize", fmt.Sprintf("%dx%d", width, height), errors.ErrImageResizeFailed)
 	}
-	
+
 	return resized, nil
 }
 

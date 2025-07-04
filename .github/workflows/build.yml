@@ -29,12 +29,12 @@ jobs:
             libopencv-contrib-dev \
             pkg-config \
             build-essential
-          
+
           # Verify OpenCV installation and get version
           echo "Checking for OpenCV pkg-config files..."
           pkg-config --list-all | grep opencv || echo "No opencv packages found via pkg-config"
           ls /usr/lib/pkgconfig/ | grep opencv || echo "No opencv pkg-config files found"
-          
+
           # Try both opencv4 and opencv and set environment
           if pkg-config --exists opencv4; then
             opencv_version=$(pkg-config --modversion opencv4)
@@ -58,7 +58,7 @@ jobs:
 
       - name: Download Go modules
         run: go mod download
-      
+
       - name: Test gocv import
         env:
           CGO_ENABLED: ${{ env.CGO_ENABLED }}
@@ -69,7 +69,7 @@ jobs:
           echo "CGO_CFLAGS: $CGO_CFLAGS"
           echo "CGO_LDFLAGS: $CGO_LDFLAGS"
           echo "PKG_CONFIG_PATH: $PKG_CONFIG_PATH"
-          
+
           # Test if gocv can be imported without ArUco issues
           go list -m gocv.io/x/gocv
           echo "Testing basic gocv import..."
@@ -107,7 +107,7 @@ jobs:
         run: |
           echo "Build CGO_CFLAGS: $CGO_CFLAGS"
           echo "Build CGO_LDFLAGS: $CGO_LDFLAGS"
-          
+
           # Build the main application
           if [ -d "cmd/asciicam" ]; then
             echo "Building from cmd/asciicam..."
@@ -138,14 +138,14 @@ jobs:
           go test -coverprofile=coverage.out -covermode=atomic ./...
           go tool cover -html=coverage.out -o coverage.html
 
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          file: coverage.out
-          fail_ci_if_error: true
-          verbose: true
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+    #   - name: Upload coverage reports to Codecov
+    #     uses: codecov/codecov-action@v4
+    #     with:
+    #       file: coverage.out
+    #       fail_ci_if_error: true
+    #       verbose: true
+    #     env:
+    #       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4

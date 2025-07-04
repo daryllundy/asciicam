@@ -37,7 +37,6 @@ linters:
   disable-all: true
   enable:
     # Core Go tools
-    - gofmt
     - govet
     - ineffassign
     - staticcheck
@@ -72,9 +71,6 @@ linters-settings:
     enable-all: true
     disable:
       - fieldalignment  # Struct field alignment is not critical for this project
-
-  gofmt:
-    simplify: true
 
   revive:
     rules:

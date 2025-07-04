@@ -137,5 +137,5 @@ jobs:
           PKG_CONFIG_PATH: ${{ env.PKG_CONFIG_PATH }}
         with:
           version: latest
-          args: --out-format=github-actions
+          args: --out-format=colored-line-number
           only-new-issues: true

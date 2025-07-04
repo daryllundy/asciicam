@@ -67,18 +67,35 @@ jobs:
       - name: Download Go modules
         run: go mod download
 
-      - name: Install goimports
-        run: go install golang.org/x/tools/cmd/goimports@latest
-
-      - name: Format code with goimports
+      - name: Install formatting tools
         run: |
-          goimports -w .
-          # Check if there are any changes after formatting
-          if [ -n "$(git diff --name-only)" ]; then
-            echo "The following files were reformatted:"
-            git diff --name-only
+          go install golang.org/x/tools/cmd/goimports@latest
+          go install golang.org/x/tools/cmd/gofumpt@latest
+
+      - name: Check code formatting
+        run: |
+          echo "Checking gofmt formatting..."
+          unformatted_files=$(gofmt -l . 2>/dev/null || true)
+          if [ -n "$unformatted_files" ]; then
+            echo "❌ The following files are not properly formatted with gofmt:"
+            echo "$unformatted_files"
+            echo ""
+            echo "Please run 'gofmt -w .' locally and commit the changes"
+            exit 1
+          else
+            echo "✅ All files are properly formatted with gofmt"
+          fi
+          
+          echo "Checking goimports formatting..."
+          goimports_issues=$(find . -name '*.go' -exec goimports -l {} \; 2>/dev/null || true)
+          if [ -n "$goimports_issues" ]; then
+            echo "❌ The following files are not properly formatted with goimports:"
+            echo "$goimports_issues"
+            echo ""
             echo "Please run 'goimports -w .' locally and commit the changes"
             exit 1
+          else
+            echo "✅ All files are properly formatted with goimports"
           fi
 
       # ← optional cache to speed up future runs and quiet the 422 warning
@@ -98,4 +115,4 @@ jobs:
           CGO_LDFLAGS: ${{ env.CGO_LDFLAGS }}
           PKG_CONFIG_PATH: ${{ env.PKG_CONFIG_PATH }}
         with:
-          args: --out-format=github-actions
+          args: --out-format=colored-line-number

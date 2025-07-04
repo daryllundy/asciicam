@@ -2,7 +2,8 @@ run:
   tests: false
 
 output:
-  format: colored-line-number
+  formats:
+    - format: colored-line-number
 
 issues:
   include:

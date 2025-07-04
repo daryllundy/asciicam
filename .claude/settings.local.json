@@ -14,7 +14,8 @@
       "Bash(go install:*)",
       "Bash(git add:*)",
       "Bash(git ls-tree:*)",
-      "Bash(git check-ignore:*)"
+      "Bash(git check-ignore:*)",
+      "Bash(golangci-lint run:*)"
     ],
     "deny": []
   }

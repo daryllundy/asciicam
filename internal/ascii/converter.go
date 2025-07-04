@@ -60,8 +60,19 @@ func (c *Converter) pixelToASCII(pixel color.Color) rune {
 func (c *Converter) ImageToASCII(width, height uint, p termenv.Profile, img image.Image) string {
 	str := strings.Builder{}
 
-	for i := 0; i < int(height); i++ {
-		for j := 0; j < int(width); j++ {
+	// Safe conversion with bounds checking
+	const maxInt = int(^uint(0) >> 1)
+	safeHeight := int(height)
+	safeWidth := int(width)
+	if height > uint(maxInt) {
+		safeHeight = maxInt
+	}
+	if width > uint(maxInt) {
+		safeWidth = maxInt
+	}
+
+	for i := 0; i < safeHeight; i++ {
+		for j := 0; j < safeWidth; j++ {
 			// Get pixel and convert to ASCII character
 			pixel := color.NRGBAModel.Convert(img.At(j, i))
 			s := termenv.String(string(c.pixelToASCII(pixel)))

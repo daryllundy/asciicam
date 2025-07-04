@@ -155,7 +155,16 @@ func getTermSize() (width, height uint) {
 		w, h = 80, 24
 	}
 
-	return uint(w), uint(h)
+	// Safe conversion with bounds checking
+	var safeWidth, safeHeight uint
+	if w >= 0 {
+		safeWidth = uint(w)
+	}
+	if h >= 0 {
+		safeHeight = uint(h)
+	}
+
+	return safeWidth, safeHeight
 }
 
 // GetDisplayDimensions returns the calculated display dimensions.

@@ -74,15 +74,26 @@ func (c *Capture) ReadFrame() (image.Image, error) {
 // This is necessary because gocv uses OpenCV's BGR color format, while
 // Go's standard image library uses RGBA format.
 func (c *Capture) matToImage(mat gocv.Mat) *image.RGBA {
-	img := image.NewRGBA(image.Rect(0, 0, int(c.width), int(c.height)))
+	// Safe conversion with bounds checking
+	const maxInt = int(^uint(0) >> 1)
+	width := int(c.width)
+	height := int(c.height)
+	if c.width > uint(maxInt) {
+		width = maxInt
+	}
+	if c.height > uint(maxInt) {
+		height = maxInt
+	}
+
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
 
 	// Create a copy of the Mat to avoid modifying the original
 	bgrMat := mat.Clone()
 	defer bgrMat.Close() // Ensure the Mat is properly closed to avoid memory leaks
 
 	// Copy the data from mat to img, converting BGR to RGBA
-	for y := 0; y < int(c.height); y++ {
-		for x := 0; x < int(c.width); x++ {
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
 			pixel := bgrMat.GetVecbAt(y, x)
 			img.SetRGBA(x, y, color.RGBA{
 				B: pixel[0], // OpenCV stores colors as BGR

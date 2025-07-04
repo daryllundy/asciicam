@@ -42,11 +42,11 @@ func run(ctx context.Context) error {
 
 	// Initialize camera capture
 	camWidth, camHeight := cfg.GetCameraDimensions()
-	cap, err := camera.NewCapture(cfg.DeviceID, camWidth, camHeight)
+	capture, err := camera.NewCapture(cfg.DeviceID, camWidth, camHeight)
 	if err != nil {
 		return fmt.Errorf("error initializing camera: %w", err)
 	}
-	defer cap.Close()
+	defer capture.Close()
 
 	// Initialize ASCII converter
 	converter := ascii.NewConverter()
@@ -94,7 +94,7 @@ func run(ctx context.Context) error {
 		}
 
 		// Read frame from camera
-		img, err := cap.ReadFrame()
+		img, err := capture.ReadFrame()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error reading frame: %v\n", err)
 			time.Sleep(100 * time.Millisecond)
@@ -115,7 +115,7 @@ func run(ctx context.Context) error {
 		}
 
 		// Resize image based on calculated dimensions
-		resizedImg := cap.ResizeImage(img, scaledWidth, scaledHeight)
+		resizedImg := capture.ResizeImage(img, scaledWidth, scaledHeight)
 
 		// Apply greenscreen effect if enabled
 		if cfg.UseGreenscreen && gsProcessor != nil {
@@ -158,7 +158,20 @@ func run(ctx context.Context) error {
 			}
 
 			// Move cursor to the bottom and print FPS
-			fmt.Printf("\033[%d;0H", int(termHeight/ansiHeightMultiplier)+1)
+			// Safe conversion with bounds checking
+			const maxInt = int(^uint(0) >> 1)
+			heightDiv := termHeight / ansiHeightMultiplier
+			var cursorLine int
+			if heightDiv > uint(maxInt-1) {
+				cursorLine = maxInt // Cap at max int to avoid overflow
+			} else {
+				cursorLine = int(heightDiv) + 1
+			}
+			// Ensure cursor line is positive
+			if cursorLine < 1 {
+				cursorLine = 1
+			}
+			fmt.Printf("\033[%d;0H", cursorLine)
 			fmt.Printf("FPS: %.0f", fpsa/float64(len(fps)))
 		}
 	}

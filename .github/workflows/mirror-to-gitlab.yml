@@ -15,11 +15,13 @@ jobs:
       - name: Validate secrets
         run: |
           if [ -z "${{ secrets.GITLAB_USERNAME }}" ] || [ -z "${{ secrets.GITLAB_TOKEN }}" ]; then
-            echo "❌ Error: GITLAB_USERNAME and GITLAB_TOKEN secrets are required"
-            echo "Please configure these secrets in your repository settings"
-            exit 1
+            echo "⚠️  Warning: GITLAB_USERNAME and GITLAB_TOKEN secrets are not configured"
+            echo "Skipping GitLab mirror. Configure these secrets to enable mirroring."
+            echo "skip_mirror=true" >> $GITHUB_ENV
+          else
+            echo "✅ GitLab credentials are configured"
+            echo "skip_mirror=false" >> $GITHUB_ENV
           fi
-          echo "✅ GitLab credentials are configured"
 
       - name: Checkout
         uses: actions/checkout@v4.2.2
@@ -27,6 +29,7 @@ jobs:
           fetch-depth: 0
 
       - name: Mirror to GitLab
+        if: env.skip_mirror != 'true'
         env:
           GITLAB_USERNAME: ${{ secrets.GITLAB_USERNAME }}
           GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
@@ -62,3 +65,9 @@ jobs:
           fi
 
           echo "✅ Successfully mirrored to GitLab"
+
+      - name: Skip mirror notification
+        if: env.skip_mirror == 'true'
+        run: |
+          echo "⏭️  Skipping GitLab mirror due to missing credentials"
+          echo "To enable mirroring, configure GITLAB_USERNAME and GITLAB_TOKEN secrets"

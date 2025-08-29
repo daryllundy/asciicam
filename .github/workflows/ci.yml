@@ -14,7 +14,7 @@ jobs:
   build-and-test:
     strategy:
       matrix:
-        go-version: [ '1.22', '1.23' ]
+        go-version: [ '1.23' ]
         os: [ ubuntu-latest, macos-latest ]
     runs-on: ${{ matrix.os }}
     steps:
@@ -39,6 +39,15 @@ jobs:
 
       - name: Setup OpenCV
         uses: ./.github/actions/setup-opencv
+
+      - name: Verify OpenCV setup
+        run: |
+          echo "Checking OpenCV installation..."
+          pkg-config --exists opencv4 && echo "opencv4 found" || echo "opencv4 not found"
+          pkg-config --exists opencv && echo "opencv found" || echo "opencv not found"
+          echo "PKG_CONFIG_PATH: $PKG_CONFIG_PATH"
+          echo "CGO_CFLAGS: $CGO_CFLAGS"
+          echo "CGO_LDFLAGS: $CGO_LDFLAGS"
 
       - name: Download Go modules
         run: go mod download

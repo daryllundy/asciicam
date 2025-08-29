@@ -9,24 +9,37 @@ runs:
       run: |
         sudo apt-get update
         sudo apt-get install -y libopencv-dev pkg-config
+        # Verify installation
+        pkg-config --exists opencv4 || pkg-config --exists opencv
+        echo "OpenCV installation verified"
 
     - name: Install OpenCV on macOS
       if: runner.os == 'macOS'
       shell: bash
       run: |
         brew install opencv
+        # Verify installation
+        brew list opencv
+        echo "OpenCV installation verified"
 
     - name: Set environment variables
       shell: bash
       run: |
-        PKG_CONFIG_PATH=""
-        if [ "${{ runner.os }}" == "macOS" ]; then
-          # For Homebrew, OpenCV paths are typically here
-          PKG_CONFIG_PATH="/usr/local/opt/opencv/lib/pkgconfig:$PKG_CONFIG_PATH"
-        fi
-        export PKG_CONFIG_PATH
-
         echo "Searching for OpenCV pkg-config..."
+        
+        # Set PKG_CONFIG_PATH for macOS
+        if [ "${{ runner.os }}" == "macOS" ]; then
+          # Try both Intel and Apple Silicon Homebrew paths
+          for path in "/opt/homebrew/lib/pkgconfig" "/usr/local/lib/pkgconfig" "/usr/local/opt/opencv/lib/pkgconfig"; do
+            if [ -d "$path" ]; then
+              export PKG_CONFIG_PATH="$path:$PKG_CONFIG_PATH"
+              echo "PKG_CONFIG_PATH=$path:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+              break
+            fi
+          done
+        fi
+        
+        # Check for OpenCV
         if pkg-config --exists opencv4; then
           echo "Found opencv4"
           echo "CGO_CFLAGS=$(pkg-config --cflags opencv4)" >> $GITHUB_ENV
@@ -37,6 +50,7 @@ runs:
           echo "CGO_LDFLAGS=$(pkg-config --libs opencv)" >> $GITHUB_ENV
         else
           echo "Error: OpenCV not found by pkg-config."
+          echo "Available packages:"
+          pkg-config --list-all | grep -i opencv || echo "No OpenCV packages found"
           exit 1
         fi
-        echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> $GITHUB_ENV

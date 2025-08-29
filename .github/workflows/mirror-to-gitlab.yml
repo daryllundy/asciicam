@@ -12,8 +12,17 @@ jobs:
   mirror:
     runs-on: ubuntu-latest
     steps:
+      - name: Validate secrets
+        run: |
+          if [ -z "${{ secrets.GITLAB_USERNAME }}" ] || [ -z "${{ secrets.GITLAB_TOKEN }}" ]; then
+            echo "❌ Error: GITLAB_USERNAME and GITLAB_TOKEN secrets are required"
+            echo "Please configure these secrets in your repository settings"
+            exit 1
+          fi
+          echo "✅ GitLab credentials are configured"
+
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
 
@@ -22,15 +31,34 @@ jobs:
           GITLAB_USERNAME: ${{ secrets.GITLAB_USERNAME }}
           GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
         run: |
+          set -e  # Exit on any error
+          
+          echo "🔧 Configuring git..."
           git config --global user.name "GitHub Mirror Bot"
           git config --global user.email "mirror-bot@users.noreply.github.com"
 
-          # Add GitLab remote
-          git remote add gitlab https://${GITLAB_USERNAME}:${GITLAB_TOKEN}@gitlab.com/${GITLAB_USERNAME}/${GITHUB_REPOSITORY#*/}.git
+          echo "🔗 Adding GitLab remote..."
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          GITLAB_URL="https://${GITLAB_USERNAME}:${GITLAB_TOKEN}@gitlab.com/${GITLAB_USERNAME}/${REPO_NAME}.git"
+          
+          # Remove existing remote if it exists
+          git remote remove gitlab 2>/dev/null || true
+          git remote add gitlab "${GITLAB_URL}"
 
-          # Push everything
-          git push gitlab --all --force
-          git push gitlab --tags --force
-          git push gitlab --prune
+          echo "📤 Pushing to GitLab..."
+          if ! git push gitlab --all --force; then
+            echo "❌ Failed to push branches"
+            exit 1
+          fi
+          
+          if ! git push gitlab --tags --force; then
+            echo "❌ Failed to push tags"
+            exit 1
+          fi
+          
+          if ! git push gitlab --prune; then
+            echo "❌ Failed to prune remote branches"
+            exit 1
+          fi
 
           echo "✅ Successfully mirrored to GitLab"

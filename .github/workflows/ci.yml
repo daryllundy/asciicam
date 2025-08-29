@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   build-and-test:
     strategy:
@@ -15,19 +19,22 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5.0.2
         with:
           go-version: ${{ matrix.go-version }}
 
-      - name: Cache Go modules
-        uses: actions/cache@v4
+      - name: Cache Go modules and build cache
+        uses: actions/cache@v4.1.2
         with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
+            ${{ runner.os }}-go-${{ matrix.go-version }}-
             ${{ runner.os }}-go-
 
       - name: Setup OpenCV
@@ -49,9 +56,9 @@ jobs:
           go tool cover -html=coverage.out -o coverage.html
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.3
         with:
-          name: coverage-report-${{ matrix.os }}-go${{ matrix.go-version }}
+          name: coverage-report-${{ matrix.os }}-go${{ matrix.go-version }}-${{ github.run_id }}
           path: |
             coverage.out
             coverage.html
@@ -61,20 +68,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5.0.2
         with:
           go-version: '1.23'
+
+      - name: Cache golangci-lint
+        uses: actions/cache@v4.1.2
+        with:
+          path: ~/.cache/golangci-lint
+          key: ${{ runner.os }}-golangci-lint-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-golangci-lint-
 
       - name: Setup OpenCV
         uses: ./.github/actions/setup-opencv
 
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v4
+        uses: golangci/golangci-lint-action@v6.1.1
         with:
-          version: latest
+          version: v1.61.0
           args: --out-format=colored-line-number
         env:
           CGO_ENABLED: "1"
@@ -82,22 +97,32 @@ jobs:
   lint-soft:
     runs-on: ubuntu-latest
     continue-on-error: true
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5.0.2
         with:
           go-version: '1.23'
+
+      - name: Cache golangci-lint
+        uses: actions/cache@v4.1.2
+        with:
+          path: ~/.cache/golangci-lint
+          key: ${{ runner.os }}-golangci-lint-soft-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-golangci-lint-soft-
+            ${{ runner.os }}-golangci-lint-
 
       - name: Setup OpenCV
         uses: ./.github/actions/setup-opencv
 
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v4
+        uses: golangci/golangci-lint-action@v6.1.1
         with:
-          version: latest
+          version: v1.61.0
           args: --config=.golangci-soft.yml --out-format=colored-line-number
         env:
           CGO_ENABLED: "1"

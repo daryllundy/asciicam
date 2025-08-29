@@ -15,20 +15,63 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
 
     steps:
+      - name: Validate secrets
+        run: |
+          if [ -z "${{ secrets.GITLAB_USERNAME }}" ]; then
+            echo "❌ Error: GITLAB_USERNAME secret is required for badge updates"
+            echo "Please configure this secret in your repository settings"
+            exit 1
+          fi
+          echo "✅ GitLab username is configured"
+
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Add GitLab Mirror Badge
         env:
           GITLAB_USERNAME: ${{ secrets.GITLAB_USERNAME }}
         run: |
-          if ! grep -q "GitLab.*Mirror\|gitlab.*badge" README.md 2>/dev/null; then
-            # Add badge after title
-            sed -i '1 a\\n[![GitHub](https://img.shields.io/badge/GitHub-Primary-181717?logo=github)](https://github.com/${{ github.repository }}) [![GitLab](https://img.shields.io/badge/GitLab-Mirror-FCA121?logo=gitlab)](https://gitlab.com/${GITLAB_USERNAME}/${{ github.event.repository.name }})\n' README.md
+          set -e  # Exit on any error
+          
+          echo "🔍 Checking for existing GitLab badge..."
+          if grep -q "GitLab.*Mirror\|gitlab.*badge" README.md 2>/dev/null; then
+            echo "✅ GitLab badge already exists in README.md"
+            exit 0
+          fi
 
-            git config user.name "GitHub Actions"
-            git config user.email "actions@github.com"
+          echo "📝 Adding GitLab mirror badge to README.md..."
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          
+          # Create backup
+          cp README.md README.md.backup
+          
+          # Add badge after title (more robust approach)
+          if head -1 README.md | grep -q "^#"; then
+            # Insert badges after the first line (title)
+            {
+              head -1 README.md
+              echo ""
+              echo "[![GitHub](https://img.shields.io/badge/GitHub-Primary-181717?logo=github)](https://github.com/${GITHUB_REPOSITORY}) [![GitLab](https://img.shields.io/badge/GitLab-Mirror-FCA121?logo=gitlab)](https://gitlab.com/${GITLAB_USERNAME}/${REPO_NAME})"
+              echo ""
+              tail -n +2 README.md
+            } > README.md.tmp && mv README.md.tmp README.md
+          else
+            echo "❌ Could not find title in README.md"
+            exit 1
+          fi
+
+          echo "🔧 Configuring git..."
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          
+          if git diff --quiet README.md; then
+            echo "ℹ️ No changes to commit"
+          else
+            echo "📤 Committing changes..."
             git add README.md
-            git commit -m "docs: Add GitLab mirror badge" || echo "Already has badge"
-            git push || echo "No changes to push"
+            git commit -m "docs: Add GitLab mirror badge"
+            git push
+            echo "✅ Successfully updated README with GitLab badge"
           fi
